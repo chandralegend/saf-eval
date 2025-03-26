@@ -331,6 +331,21 @@ SAF-Eval includes several example scripts to demonstrate key features:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+## Citation & Acknowledgments
+
+This work is inspired by research on evaluating factuality in large language models, particularly:
+
+```bibtex
+@misc{wei2024long,
+  title={Long-form factuality in large language models},
+  author={Wei, Jerry and Yang, Chengrun and Song, Xinying and Lu, Yifeng and Hu, Nathan and Huang, Jie and Tran, Dustin and Peng, Daiyi and Liu, Ruibo and Huang, Da and Du, Cosmo and Le, Quoc V.},
+  year={2024},
+  url={https://arxiv.org/abs/2403.18802},
+}
+```
+
+The approach of decomposing responses into atomic facts and evaluating them against retrieved evidence follows methodologies outlined in the above paper. We are grateful to the authors for their contributions to this field.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
