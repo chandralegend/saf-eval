@@ -194,7 +194,7 @@ from saf_eval.core.models import AtomicFact, RetrievedDocument
 from saf_eval.retrieval.base import RetrieverBase
 
 class MyCustomRetriever(RetrieverBase):
-    async def retrieve(self, fact: AtomicFact, **kwargs) -> List<RetrievedDocument]:
+    async def retrieve(self, fact: AtomicFact, **kwargs) -> List[RetrievedDocument]:
         # Implement your retrieval logic here
         # ...
         return documents
