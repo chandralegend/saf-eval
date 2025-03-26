@@ -154,7 +154,7 @@ from saf_eval.core.models import AtomicFact, RetrievedDocument
 from saf_eval.retrieval.base import RetrieverBase
 
 class MyCustomRetriever(RetrieverBase):
-    async def retrieve(self, fact: AtomicFact, **kwargs) -> List[RetrievedDocument]:
+    async def retrieve(self, fact: AtomicFact, **kwargs) -> List<RetrievedDocument]:
         # Implement your retrieval logic here
         # ...
         return documents
@@ -170,6 +170,28 @@ from saf_eval.evaluation.classifier import FactClassifier
 classifier = FactClassifier(
     llm=my_llm,
     categories=["accurate", "partially_accurate", "inaccurate", "uncertain"]
+)
+```
+
+### Fact Deduplication
+
+The pipeline automatically deduplicates similar facts to avoid redundant evaluations:
+
+```python
+from saf_eval.utils.deduplication import deduplicate_facts
+from typing import List
+from saf_eval.core.models import AtomicFact
+
+# Default deduplication is already included in the pipeline, but can be customized:
+def my_custom_deduplication(facts: List[AtomicFact]) -> List[AtomicFact]:
+    # Custom logic to identify and merge similar facts
+    # ...
+    return deduplicated_facts
+
+# Use custom deduplication in the pipeline
+pipeline = EvaluationPipeline(
+    # ...other arguments...
+    deduplication_fn=my_custom_deduplication
 )
 ```
 
