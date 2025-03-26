@@ -1,0 +1,39 @@
+name: Lint
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+        
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        
+    - name: Install dependencies
+      run: |
+        poetry install
+        
+    - name: Lint with black
+      run: |
+        poetry run black --check saf_eval tests examples
+        
+    - name: Lint with isort
+      run: |
+        poetry run isort --check saf_eval tests examples
+        
+    - name: Type check with mypy
+      run: |
+        poetry run mypy saf_eval

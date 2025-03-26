@@ -1,0 +1,25 @@
+[project]
+name = "saf-eval"
+version = "0.1.0"
+description = "Automatic evaluation of model responses in long-form factuality settings."
+authors = [
+    {name = "chandralegend",email = "irugalbandarachandra@gmail.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic (>=2.10.6,<3.0.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "openai (>=1.68.2,<2.0.0)"
+]
+
+[tool.poetry]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.0.0"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
