@@ -1,6 +1,14 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from pydantic import Field, ConfigDict
 from pydantic_settings import BaseSettings
+
+class LoggingConfig(BaseSettings):
+    """Configuration for logging."""
+    level: str = Field(default="INFO", description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    console: bool = Field(default=True, description="Whether to log to console")
+    file: bool = Field(default=False, description="Whether to log to file")
+    log_dir: Optional[str] = Field(default=None, description="Directory for log files")
+    json_format: bool = Field(default=False, description="Whether to format logs as JSON")
 
 class Config(BaseSettings):
     """Global configuration for SAF-Eval pipeline.
@@ -18,6 +26,7 @@ class Config(BaseSettings):
     # Optional/extensible configuration
     llm_config: Dict = Field(default_factory=dict, description="Configuration for LLM providers")
     retrieval_config: Dict = Field(default_factory=dict, description="Configuration for retrieval methods")
+    logging: LoggingConfig = Field(default_factory=LoggingConfig, description="Logging configuration")
     
     @property
     def evaluation_categories(self) -> List[str]:
@@ -27,5 +36,5 @@ class Config(BaseSettings):
     # Using ConfigDict instead of class Config
     model_config = ConfigDict(
         env_prefix="SAFEVAL_",
-        protected_namespaces=("evaluation_categories",)  # Remove "scoring_rubric" from protected namespaces
+        protected_namespaces=("evaluation_categories",)
     )

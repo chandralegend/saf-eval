@@ -9,6 +9,9 @@ SAF-Eval (Search-Augmented Factuality Evaluator) is a modular Python package for
 
 - **Modular Pipeline**: Extract atomic facts, check relevance, retrieve supporting documents, evaluate factuality
 - **Self-Containment Processing**: Automatically detect and fix non-self-contained facts by adding context
+- **Few-Shot Learning**: Improve fact extraction using domain-specific examples
+- **Fact Deduplication**: Identify and remove similar or duplicate facts to avoid redundant evaluations
+- **Comprehensive Logging**: Detailed logging of the entire evaluation process for analysis and debugging
 - **Customizable Evaluation**: Define your own categories and scoring rubrics
 - **Provider-Agnostic**: Use any LLM provider through a consistent interface
 - **Flexible Retrieval**: Integrate with any document retrieval system
@@ -42,7 +45,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 
-from saf_eval.config import Config
+from saf_eval.config import Config, LoggingConfig
 from saf_eval.core.pipeline import EvaluationPipeline
 from saf_eval.extraction.extractor import FactExtractor
 from saf_eval.containment.checker import ContainmentChecker
@@ -62,7 +65,8 @@ async def evaluate_response():
             "contradicted": 0.0, 
             "unverifiable": 0.5
         },
-        retrieval_config={"top_k": 3}
+        retrieval_config={"top_k": 3},
+        logging=LoggingConfig(level="INFO", console=True, file=True, log_dir="./logs")
     )
     
     llm = OpenAILLM(model="gpt-4", api_key=os.getenv("OPENAI_API_KEY"))
@@ -104,6 +108,7 @@ SAF-Eval follows a modular architecture with the following key components:
 - **Retrieval**: Finding supporting documents for verification
 - **Evaluation**: Classifying facts and calculating factuality scores
 - **LLM**: Abstraction layer for language model providers
+- **Utils**: Utility functions including deduplication and logging
 
 ## Advanced Usage
 
@@ -230,6 +235,54 @@ pipeline = EvaluationPipeline(
 )
 ```
 
+### Comprehensive Logging
+
+SAF-Eval provides detailed logging throughout the evaluation pipeline:
+
+```python
+from saf_eval.config import Config, LoggingConfig
+from saf_eval.utils.logging import get_logger
+
+# Configure logging in the config object
+config = Config(
+    # ...other config settings...
+    logging=LoggingConfig(
+        level="DEBUG",           # Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        console=True,            # Log to console
+        file=True,               # Log to file
+        log_dir="./logs",        # Directory for log files
+        json_format=True         # Output logs in JSON format for easier parsing
+    )
+)
+
+# Create a custom logger in any component
+logger = get_logger(
+    name="my-component",
+    level=config.logging.level,
+    log_dir=config.logging.log_dir,
+    console=config.logging.console,
+    file=config.logging.file,
+    json_format=config.logging.json_format
+)
+
+# Log with structured data
+logger.info("Processing fact", {
+    "fact_id": "123",
+    "fact_text": "Paris is the capital of France",
+    "is_self_contained": True
+})
+```
+
+The logging system tracks:
+- Fact extraction steps and results
+- Self-containment checks and fixes
+- Deduplication decisions
+- Document retrieval statistics
+- Classification results
+- Overall performance metrics
+
+For a complete example, see `examples/logging_example.py`.
+
 ## Configuration
 
 SAF-Eval uses a unified configuration system. The `Config` class centralizes all settings:
@@ -261,6 +314,18 @@ print(config.evaluation_categories)  # ['fully_supported', 'partially_supported'
 ```
 
 See the `examples/` directory for more advanced usage patterns, including `self_containment_example.py` which demonstrates how to process non-self-contained facts.
+
+## Example Scripts
+
+SAF-Eval includes several example scripts to demonstrate key features:
+
+- **basic_usage.py**: Simple end-to-end evaluation
+- **custom_retriever.py**: Implementing a custom retrieval system
+- **custom_evaluation.py**: Custom evaluation categories and scoring
+- **self_containment_example.py**: Handling non-self-contained facts
+- **deduplication_example.py**: Custom fact deduplication
+- **few_shot_extraction_example.py**: Domain-specific extraction examples
+- **logging_example.py**: Comprehensive logging setup
 
 ## Contributing
 
