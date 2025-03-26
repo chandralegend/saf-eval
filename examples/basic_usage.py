@@ -16,12 +16,12 @@ load_dotenv()
 async def main():
     # Initialize configuration
     config = Config(
-        evaluation_categories=["supported", "contradicted", "unverifiable"],
         scoring_rubric={
             "supported": 1.0,
             "contradicted": 0.0,
             "unverifiable": 0.5
-        }
+        },
+        retrieval_config={"top_k": 3}
     )
     
     # Initialize components
@@ -36,10 +36,10 @@ async def main():
         "Mount Everest is the tallest mountain in the world.": "Mount Everest is the highest mountain above sea level at 29,035 feet (8,850 meters)."
     }
     
-    extractor = FactExtractor(llm=llm)
-    retriever = SimpleRetriever(knowledge_base=knowledge_base)
-    classifier = FactClassifier(llm=llm, categories=config.evaluation_categories)
-    scorer = FactualityScorer(scoring_rubric=config.scoring_rubric)
+    extractor = FactExtractor(config=config, llm=llm)
+    retriever = SimpleRetriever(config=config, knowledge_base=knowledge_base)
+    classifier = FactClassifier(config=config, llm=llm)
+    scorer = FactualityScorer(config=config)
     
     # Create the evaluation pipeline
     pipeline = EvaluationPipeline(

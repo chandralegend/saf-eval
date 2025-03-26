@@ -1,11 +1,11 @@
 import asyncio
 import os
-from typing import Dict, List
+from typing import List
 from dotenv import load_dotenv
 
 from saf_eval.config import Config
 from saf_eval.core.pipeline import EvaluationPipeline
-from saf_eval.core.models import AtomicFact, RetrievedDocument, FactEvaluation
+from saf_eval.core.models import AtomicFact, RetrievedDocument, FactEvaluation, ResponseEvaluation
 from saf_eval.extraction.extractor import FactExtractor
 from saf_eval.llm.providers.openai import OpenAILLM
 from saf_eval.retrieval.providers.simple import SimpleRetriever
@@ -19,16 +19,8 @@ load_dotenv()
 class EnhancedFactClassifier(FactClassifier):
     """Enhanced fact classifier with more detailed categories."""
     
-    def __init__(self, llm: OpenAILLM):
-        # Define enhanced categories
-        enhanced_categories = [
-            "fully_supported",
-            "partially_supported",
-            "no_evidence",
-            "contradicted",
-            "misleading"
-        ]
-        super().__init__(llm=llm, categories=enhanced_categories)
+    def __init__(self, config: Config, llm: OpenAILLM):
+        super().__init__(config=config, llm=llm)
     
     def _build_classification_prompt(self, fact: AtomicFact, documents: List[RetrievedDocument]) -> str:
         """Build an enhanced prompt with detailed category descriptions."""
@@ -53,6 +45,8 @@ class EnhancedFactClassifier(FactClassifier):
         
         {categories_description}
         
+        Available categories: {', '.join(self.config.evaluation_categories)}
+        
         Provide your classification as JSON with 'category' and 'confidence' (0-1) fields.
         """
 
@@ -60,18 +54,10 @@ class EnhancedFactClassifier(FactClassifier):
 class EnhancedFactualityScorer(FactualityScorer):
     """Enhanced factuality scorer with weighted categories."""
     
-    def __init__(self):
-        # Define scoring rubric with weighted categories
-        enhanced_scoring_rubric = {
-            "fully_supported": 1.0,
-            "partially_supported": 0.6,
-            "no_evidence": 0.3,
-            "contradicted": -1.0,  # Penalize contradictions
-            "misleading": -0.5     # Penalize misleading facts
-        }
-        super().__init__(scoring_rubric=enhanced_scoring_rubric)
+    def __init__(self, config: Config):
+        super().__init__(config=config)
     
-    def score(self, response_text: str, context: str, evaluations: List[FactEvaluation]) -> float:
+    def score(self, response_text: str, context: str, evaluations: List[FactEvaluation]) -> ResponseEvaluation:
         """Calculate weighted factuality score with baseline adjustment."""
         result = super().score(response_text, context, evaluations)
         
@@ -82,8 +68,16 @@ class EnhancedFactualityScorer(FactualityScorer):
         return result
 
 async def main():
-    # Initialize configuration
-    config = Config()
+    # Initialize configuration with enhanced scoring rubric
+    config = Config(
+        scoring_rubric={
+            "fully_supported": 1.0,
+            "partially_supported": 0.6,
+            "no_evidence": 0.3,
+            "contradicted": -1.0,  # Penalize contradictions
+            "misleading": -0.5     # Penalize misleading facts
+        }
+    )
     
     # Initialize components
     llm = OpenAILLM(
@@ -98,12 +92,13 @@ async def main():
         "The Amazon River": "The Amazon River is approximately 6,400 km (4,000 miles) long and is the largest river by discharge volume.",
     }
     
-    extractor = FactExtractor(llm=llm)
-    retriever = SimpleRetriever(knowledge_base=knowledge_base)
+    # Set up pipeline components with shared config
+    extractor = FactExtractor(config=config, llm=llm)
+    retriever = SimpleRetriever(config=config, knowledge_base=knowledge_base)
     
     # Use our enhanced classifier and scorer
-    classifier = EnhancedFactClassifier(llm=llm)
-    scorer = EnhancedFactualityScorer()
+    classifier = EnhancedFactClassifier(config=config, llm=llm)
+    scorer = EnhancedFactualityScorer(config=config)
     
     # Create the evaluation pipeline
     pipeline = EvaluationPipeline(

@@ -1,12 +1,13 @@
-from typing import Dict, List
+from typing import List
 
+from ..config import Config
 from ..core.models import FactEvaluation, ResponseEvaluation
 
 class FactualityScorer:
     """Scores the factuality of a response based on fact evaluations."""
     
-    def __init__(self, scoring_rubric: Dict[str, float] = None):
-        self.scoring_rubric = scoring_rubric or {"relevant": 1.0, "irrelevant": 0.0}
+    def __init__(self, config: Config):
+        self.config = config
     
     def score(self, response_text: str, context: str, evaluations: List[FactEvaluation]) -> ResponseEvaluation:
         """Calculate the overall factuality score."""
@@ -22,7 +23,7 @@ class FactualityScorer:
         # Calculate weighted score based on the rubric
         total_score = 0.0
         for eval in evaluations:
-            category_score = self.scoring_rubric.get(eval.category, 0.0)
+            category_score = self.config.scoring_rubric.get(eval.category, 0.0)
             total_score += category_score * eval.confidence
         
         # Normalize score

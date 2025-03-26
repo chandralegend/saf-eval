@@ -21,9 +21,10 @@ load_dotenv()
 class VectorDBRetriever(RetrieverBase):
     """Custom retriever that simulates a vector database search."""
     
-    def __init__(self, vector_db_client=None, top_k=3):
+    def __init__(self, config: Config, vector_db_client=None):
+        super().__init__(config)
         self.vector_db_client = vector_db_client or self._mock_vector_db()
-        self.top_k = top_k
+        self.top_k = self.config.retrieval_config.get("top_k", 3)
         
     async def retrieve(self, fact: AtomicFact, **kwargs) -> List[RetrievedDocument]:
         """Retrieve documents from vector database."""
@@ -90,20 +91,31 @@ class VectorDBRetriever(RetrieverBase):
         return MockVectorDB()
 
 async def main():
-    # Initialize configuration
-    config = Config()
+    # Initialize configuration with retrieval settings
+    config = Config(
+        scoring_rubric={
+            "supported": 1.0,
+            "contradicted": 0.0,
+            "unverifiable": 0.5
+        },
+        retrieval_config={
+            "top_k": 2,
+            "embedding_model": "text-embedding-3-small"  # Example of custom retrieval config
+        }
+    )
     
-    # Initialize components
+    # Initialize components with shared config
     llm = OpenAILLM(
         model="gpt-4", 
         api_key=os.getenv("OPENAI_API_KEY")
     )
     
-    extractor = FactExtractor(llm=llm)
+    # Setup pipeline components
+    extractor = FactExtractor(config=config, llm=llm)
     # Use our custom vector DB retriever
-    retriever = VectorDBRetriever(top_k=2)
-    classifier = FactClassifier(llm=llm)
-    scorer = FactualityScorer()
+    retriever = VectorDBRetriever(config=config)
+    classifier = FactClassifier(config=config, llm=llm)
+    scorer = FactualityScorer(config=config)
     
     # Create the evaluation pipeline
     pipeline = EvaluationPipeline(

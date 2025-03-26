@@ -1,13 +1,15 @@
 from typing import List
 import uuid
 
+from ..config import Config
 from ..core.models import AtomicFact
 from ..llm.base import LLMBase
 
 class FactExtractor:
     """Extract atomic facts from an AI response."""
     
-    def __init__(self, llm: LLMBase = None):
+    def __init__(self, config: Config, llm: LLMBase = None):
+        self.config = config
         self.llm = llm
         
     async def extract_facts(self, response: str) -> List[AtomicFact]:

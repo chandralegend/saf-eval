@@ -53,7 +53,16 @@ from saf_eval.evaluation.scoring import FactualityScorer
 load_dotenv()
 
 async def evaluate_response():
-    # Initialize components
+    # Initialize components with shared config
+    config = Config(
+        scoring_rubric={
+            "supported": 1.0,
+            "contradicted": 0.0, 
+            "unverifiable": 0.5
+        },
+        retrieval_config={"top_k": 3}
+    )
+    
     llm = OpenAILLM(model="gpt-4", api_key=os.getenv("OPENAI_API_KEY"))
     
     # Create a knowledge base
@@ -61,18 +70,13 @@ async def evaluate_response():
         "Mount Everest": "Mount Everest is the highest mountain above sea level at 29,032 feet (8,849 meters)."
     }
     
-    # Setup the pipeline
-    config = Config(
-        evaluation_categories=["supported", "contradicted", "unverifiable"],
-        scoring_rubric={"supported": 1.0, "contradicted": 0.0, "unverifiable": 0.5}
-    )
-    
+    # Setup the pipeline with components that share the same config
     pipeline = EvaluationPipeline(
         config=config,
-        extractor=FactExtractor(llm=llm),
-        retriever=SimpleRetriever(knowledge_base=knowledge_base),
-        classifier=FactClassifier(llm=llm, categories=config.evaluation_categories),
-        scorer=FactualityScorer(scoring_rubric=config.scoring_rubric)
+        extractor=FactExtractor(config=config, llm=llm),
+        retriever=SimpleRetriever(config=config, knowledge_base=knowledge_base),
+        classifier=FactClassifier(config=config, llm=llm),
+        scorer=FactualityScorer(config=config)
     )
     
     # Evaluate a response
@@ -127,6 +131,36 @@ classifier = FactClassifier(
     llm=my_llm,
     categories=["accurate", "partially_accurate", "inaccurate", "uncertain"]
 )
+```
+
+## Configuration
+
+SAF-Eval uses a unified configuration system. The `Config` class centralizes all settings:
+
+```python
+from saf_eval.config import Config
+
+config = Config(
+    # The scoring rubric defines both evaluation categories and their weights
+    scoring_rubric={
+        "fully_supported": 1.0,
+        "partially_supported": 0.6,
+        "contradicted": 0.0
+    },
+    # Additional configuration for retrieval methods
+    retrieval_config={
+        "top_k": 5,
+        "min_relevance": 0.7
+    },
+    # Custom LLM configuration
+    llm_config={
+        "temperature": 0.1,
+        "max_tokens": 500
+    }
+)
+
+# Categories are automatically derived from the scoring rubric
+print(config.evaluation_categories)  # ['fully_supported', 'partially_supported', 'contradicted']
 ```
 
 See the `examples/` directory for more advanced usage patterns.

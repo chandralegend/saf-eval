@@ -5,7 +5,7 @@ from ..extraction.extractor import FactExtractor
 from ..retrieval.base import RetrieverBase
 from ..evaluation.classifier import FactClassifier
 from ..evaluation.scoring import FactualityScorer
-from .models import ResponseEvaluation, FactEvaluation
+from .models import ResponseEvaluation
 
 class EvaluationPipeline:
     """Main pipeline for evaluating factuality of AI responses."""

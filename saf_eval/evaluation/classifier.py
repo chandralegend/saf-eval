@@ -1,14 +1,15 @@
 from typing import Dict, List
 
+from ..config import Config
 from ..core.models import AtomicFact, RetrievedDocument, FactEvaluation
 from ..llm.base import LLMBase
 
 class FactClassifier:
     """Classifies facts into categories based on retrieved documents."""
     
-    def __init__(self, llm: LLMBase, categories: List[str] = None):
+    def __init__(self, config: Config, llm: LLMBase):
+        self.config = config
         self.llm = llm
-        self.categories = categories or ["relevant", "irrelevant"]
     
     async def classify(self, fact: AtomicFact, documents: List[RetrievedDocument]) -> FactEvaluation:
         """Classify a fact based on the retrieved documents."""
@@ -17,7 +18,7 @@ class FactClassifier:
         classification_schema = {
             "type": "object",
             "properties": {
-                "category": {"type": "string", "enum": self.categories},
+                "category": {"type": "string", "enum": self.config.evaluation_categories},
                 "confidence": {"type": "number", "minimum": 0, "maximum": 1}
             }
         }
@@ -43,7 +44,7 @@ class FactClassifier:
         Retrieved Documents:
         {doc_texts}
         
-        Available categories: {', '.join(self.categories)}
+        Available categories: {', '.join(self.config.evaluation_categories)}
         
         Provide your classification as JSON with 'category' and 'confidence' (0-1) fields.
         """

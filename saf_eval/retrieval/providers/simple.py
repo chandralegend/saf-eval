@@ -2,14 +2,17 @@ import uuid
 from typing import Dict, List
 import re
 
+from ...config import Config
 from ...core.models import AtomicFact, RetrievedDocument
 from ..base import RetrieverBase
 
 class SimpleRetriever(RetrieverBase):
     """Simple retriever using keyword matching against a knowledge base."""
     
-    def __init__(self, knowledge_base: Dict[str, str]):
+    def __init__(self, config: Config, knowledge_base: Dict[str, str]):
+        super().__init__(config)
         self.knowledge_base = knowledge_base
+        self.top_k = self.config.retrieval_config.get("top_k", 3)
     
     async def retrieve(self, fact: AtomicFact, **kwargs) -> List[RetrievedDocument]:
         """Retrieve documents from the knowledge base based on keyword matching."""
@@ -30,7 +33,7 @@ class SimpleRetriever(RetrieverBase):
         
         # Sort by relevance score and return
         matching_documents.sort(key=lambda x: x.relevance_score, reverse=True)
-        return matching_documents[:3]  # Return top 3 matches
+        return matching_documents[:self.top_k]
     
     def _extract_keywords(self, text: str) -> List[str]:
         """Extract relevant keywords from text."""
