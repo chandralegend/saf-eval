@@ -1,5 +1,6 @@
-from typing import Dict, List, Set
-from pydantic import BaseSettings, Field
+from typing import Dict, List
+from pydantic import Field, ConfigDict
+from pydantic_settings import BaseSettings
 
 class Config(BaseSettings):
     """Global configuration for SAF-Eval pipeline.
@@ -23,6 +24,8 @@ class Config(BaseSettings):
         """Get valid evaluation categories from the scoring rubric."""
         return list(self.scoring_rubric.keys())
     
-    class Config:
-        env_prefix = "SAFEVAL_"
-        protected_namespaces = ("scoring_rubric", "evaluation_categories")
+    # Using ConfigDict instead of class Config
+    model_config = ConfigDict(
+        env_prefix="SAFEVAL_",
+        protected_namespaces=("evaluation_categories",)  # Remove "scoring_rubric" from protected namespaces
+    )

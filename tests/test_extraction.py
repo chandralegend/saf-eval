@@ -1,10 +1,12 @@
 import pytest
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 from saf_eval.core.models import AtomicFact
 from saf_eval.extraction.extractor import FactExtractor
 from saf_eval.llm.base import LLMBase
+
+# config fixture now comes from conftest.py
 
 @pytest.fixture
 def mock_llm():
@@ -13,12 +15,12 @@ def mock_llm():
     return mock
 
 @pytest.fixture
-def extractor(mock_llm):
-    return FactExtractor(llm=mock_llm)
+def extractor(config, mock_llm):
+    return FactExtractor(config=config, llm=mock_llm)
 
 @pytest.fixture
-def basic_extractor():
-    return FactExtractor()
+def basic_extractor(config):
+    return FactExtractor(config=config)
 
 def test_extract_basic(basic_extractor):
     response = "This is fact one. This is fact two. This is fact three."
@@ -31,7 +33,7 @@ def test_extract_basic(basic_extractor):
     assert facts[2].text == "This is fact three"
     assert all(fact.source_text == response for fact in facts)
 
-@pytest.mark.asyncio
+# pytest-asyncio will now recognize these tests automatically
 async def test_extract_with_llm(extractor, mock_llm):
     response = "This is a response with multiple facts."
     facts = await extractor._extract_with_llm(response)
@@ -46,7 +48,6 @@ async def test_extract_with_llm(extractor, mock_llm):
     mock_llm.generate.assert_called_once()
     assert response in mock_llm.generate.call_args[0][0]
 
-@pytest.mark.asyncio
 async def test_extract_facts_with_llm(extractor):
     response = "Test response"
     facts = await extractor.extract_facts(response)
@@ -54,7 +55,6 @@ async def test_extract_facts_with_llm(extractor):
     assert len(facts) == 3
     assert all(isinstance(fact, AtomicFact) for fact in facts)
 
-@pytest.mark.asyncio
 async def test_extract_facts_basic(basic_extractor):
     response = "First fact. Second fact."
     facts = await basic_extractor.extract_facts(response)

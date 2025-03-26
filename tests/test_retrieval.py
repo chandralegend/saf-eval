@@ -1,8 +1,13 @@
 import pytest
 from uuid import uuid4
 
+from saf_eval.config import Config
 from saf_eval.core.models import AtomicFact, RetrievedDocument
 from saf_eval.retrieval.providers.simple import SimpleRetriever
+
+@pytest.fixture
+def config():
+    return Config()
 
 @pytest.fixture
 def knowledge_base():
@@ -13,8 +18,8 @@ def knowledge_base():
     }
 
 @pytest.fixture
-def retriever(knowledge_base):
-    return SimpleRetriever(knowledge_base=knowledge_base)
+def retriever(config, knowledge_base):
+    return SimpleRetriever(config=config, knowledge_base=knowledge_base)
 
 @pytest.fixture
 def atomic_fact():
@@ -24,7 +29,6 @@ def atomic_fact():
         source_text="Albert Einstein proposed the theory of relativity in physics."
     )
 
-@pytest.mark.asyncio
 async def test_retrieve(retriever, atomic_fact):
     documents = await retriever.retrieve(atomic_fact)
     
@@ -38,7 +42,6 @@ async def test_retrieve(retriever, atomic_fact):
     science_doc = next(doc for doc in documents if "Einstein" in doc.content)
     assert science_doc.relevance_score > 0
 
-@pytest.mark.asyncio
 async def test_retrieve_no_match(retriever):
     fact = AtomicFact(
         id=str(uuid4()),
