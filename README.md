@@ -144,6 +144,41 @@ facts = await extractor.extract_facts(
 )
 ```
 
+### Using Examples for Fact Extraction
+
+You can provide examples to improve fact extraction through few-shot learning:
+
+```python
+from typing import List, Tuple, Optional
+
+# Define an example provider function
+def my_example_provider(response: str, context: Optional[str] = None, **kwargs) -> List[Tuple[str, List[str]]]:
+    """Provide domain-specific examples for fact extraction."""
+    # Return a list of (example_text, [fact1, fact2, ...]) tuples
+    return [
+        (
+            "The Eiffel Tower was completed in 1889 and stands at 330 meters tall.",
+            ["The Eiffel Tower was completed in 1889.", "The Eiffel Tower is 330 meters tall."]
+        ),
+        # More examples...
+    ]
+
+# Use the example provider in the extractor
+extractor = FactExtractor(
+    config=config,
+    llm=llm,
+    example_provider=my_example_provider
+)
+
+# Extract facts with examples to guide the LLM
+facts = await extractor.extract_facts(
+    response="The Golden Gate Bridge was completed in 1937.",
+    context="Information about famous structures"
+)
+```
+
+Example providers can dramatically improve extraction quality by demonstrating the desired level of granularity and format.
+
 ### Custom Retrieval System
 
 You can implement your own retrieval system:
@@ -183,7 +218,7 @@ from typing import List
 from saf_eval.core.models import AtomicFact
 
 # Default deduplication is already included in the pipeline, but can be customized:
-def my_custom_deduplication(facts: List[AtomicFact]) -> List[AtomicFact]:
+def my_custom_deduplication(facts: List<AtomicFact]) -> List<AtomicFact]:
     # Custom logic to identify and merge similar facts
     # ...
     return deduplicated_facts
