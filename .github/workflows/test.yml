@@ -9,6 +9,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      CI: true  # Set CI environment to ensure API tests are skipped
     strategy:
       matrix:
         python-version: ["3.12"]
@@ -42,7 +44,7 @@ jobs:
         
     - name: Run tests with coverage
       run: |
-        poetry run pytest --cov=saf_eval --cov-report=xml
+        poetry run pytest -v --cov=saf_eval --cov-report=xml
         
     - name: Upload coverage report
       uses: codecov/codecov-action@v3
