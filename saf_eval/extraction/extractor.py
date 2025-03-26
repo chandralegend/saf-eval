@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import uuid
 
 from ..config import Config
@@ -12,20 +12,39 @@ class FactExtractor:
         self.config = config
         self.llm = llm
         
-    async def extract_facts(self, response: str) -> List[AtomicFact]:
-        """Extract atomic facts from the response."""
+    async def extract_facts(self, response: str, context: Optional[str] = None) -> List[AtomicFact]:
+        """
+        Extract atomic facts from the response.
+        
+        Args:
+            response: The text response to extract facts from
+            context: Optional context to help with extraction (used when LLM is available)
+        
+        Returns:
+            List of extracted atomic facts
+        """
         if self.llm:
-            return await self._extract_with_llm(response)
+            return await self._extract_with_llm(response, context)
         else:
             return self._extract_basic(response)
             
-    async def _extract_with_llm(self, response: str) -> List[AtomicFact]:
+    async def _extract_with_llm(self, response: str, context: Optional[str] = None) -> List[AtomicFact]:
         """Use LLM to extract atomic facts."""
         prompt = f"""
         Extract the atomic facts from the following text. An atomic fact is a simple, 
         self-contained statement that makes a single factual claim.
         
         Text: {response}
+        """
+        
+        if context:
+            prompt += f"""
+            
+            Context (to help understand the text):
+            {context}
+            """
+        
+        prompt += """
         
         Output each atomic fact on a new line.
         """

@@ -1,11 +1,13 @@
-from typing import List
+from typing import List, Optional
+from ..config import Config
 from ..core.models import AtomicFact
 from ..llm.base import LLMBase
 
 class ContainmentChecker:
-    """Checks if atomic facts are self-contained within the response."""
+    """Checks if atomic facts are self-contained within the response and fixes those that aren't."""
     
-    def __init__(self, llm: LLMBase = None):
+    def __init__(self, config: Config, llm: LLMBase = None):
+        self.config = config
         self.llm = llm
     
     async def check_containment(self, facts: List[AtomicFact], response: str) -> List[AtomicFact]:
@@ -14,6 +16,61 @@ class ContainmentChecker:
             return await self._check_with_llm(facts, response)
         else:
             return self._check_basic(facts, response)
+    
+    async def self_contain_facts(self, facts: List[AtomicFact], response: str, context: Optional[str] = None) -> List[AtomicFact]:
+        """
+        Make non-self-contained facts self-contained by adding necessary context.
+        
+        Args:
+            facts: List of atomic facts to process
+            response: The original response text
+            context: Optional additional context
+            
+        Returns:
+            List of self-contained atomic facts
+        """
+        if not self.llm:
+            # Without LLM, we can't reliably self-contain facts
+            return facts
+            
+        updated_facts = []
+        
+        for fact in facts:
+            # Skip already self-contained facts
+            if fact.is_self_contained:
+                updated_facts.append(fact)
+                continue
+                
+            prompt = f"""
+            Make the following fact self-contained so it can be understood without additional context.
+            A self-contained fact should include all necessary details to be understood on its own.
+            
+            Original response: {response}
+            
+            """
+            
+            if context:
+                prompt += f"Additional context: {context}\n\n"
+                
+            prompt += f"""
+            Fact to make self-contained: {fact.text}
+            
+            Rewrite this as a self-contained fact:
+            """
+            
+            result = await self.llm.generate(prompt)
+            self_contained_text = result.strip()
+            
+            # Create a new fact with the self-contained text
+            updated_fact = fact.model_copy(
+                update={
+                    "text": self_contained_text,
+                    "is_self_contained": True
+                }
+            )
+            updated_facts.append(updated_fact)
+            
+        return updated_facts
     
     async def _check_with_llm(self, facts: List[AtomicFact], response: str) -> List[AtomicFact]:
         """Use LLM to determine if facts are self-contained."""

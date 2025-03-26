@@ -8,6 +8,7 @@ SAF-Eval (Search-Augmented Factuality Evaluator) is a modular Python package for
 ## Features
 
 - **Modular Pipeline**: Extract atomic facts, check relevance, retrieve supporting documents, evaluate factuality
+- **Self-Containment Processing**: Automatically detect and fix non-self-contained facts by adding context
 - **Customizable Evaluation**: Define your own categories and scoring rubrics
 - **Provider-Agnostic**: Use any LLM provider through a consistent interface
 - **Flexible Retrieval**: Integrate with any document retrieval system
@@ -44,6 +45,7 @@ from dotenv import load_dotenv
 from saf_eval.config import Config
 from saf_eval.core.pipeline import EvaluationPipeline
 from saf_eval.extraction.extractor import FactExtractor
+from saf_eval.containment.checker import ContainmentChecker
 from saf_eval.llm.providers.openai import OpenAILLM
 from saf_eval.retrieval.providers.simple import SimpleRetriever
 from saf_eval.evaluation.classifier import FactClassifier
@@ -76,7 +78,8 @@ async def evaluate_response():
         extractor=FactExtractor(config=config, llm=llm),
         retriever=SimpleRetriever(config=config, knowledge_base=knowledge_base),
         classifier=FactClassifier(config=config, llm=llm),
-        scorer=FactualityScorer(config=config)
+        scorer=FactualityScorer(config=config),
+        containment_checker=ContainmentChecker(config=config, llm=llm)  # Add containment checker
     )
     
     # Evaluate a response
@@ -96,13 +99,50 @@ SAF-Eval follows a modular architecture with the following key components:
 
 - **Core**: Pipeline coordination and data models
 - **Extraction**: Breaking down responses into atomic facts
-- **Containment**: Checking if facts are self-contained
+- **Containment**: Checking and fixing non-self-contained facts
 - **Relevancy**: Assessing relevance of facts to the context
 - **Retrieval**: Finding supporting documents for verification
 - **Evaluation**: Classifying facts and calculating factuality scores
 - **LLM**: Abstraction layer for language model providers
 
 ## Advanced Usage
+
+### Self-Containment Processing
+
+The `ContainmentChecker` helps identify and fix facts that require additional context to be understood:
+
+```python
+from saf_eval.containment.checker import ContainmentChecker
+from saf_eval.llm.providers.openai import OpenAILLM
+
+# Initialize the components
+llm = OpenAILLM(model="gpt-4", api_key=os.getenv("OPENAI_API_KEY"))
+containment_checker = ContainmentChecker(config=config, llm=llm)
+
+# Check if facts are self-contained
+checked_facts = await containment_checker.check_containment(facts, response)
+
+# Fix non-self-contained facts by adding context
+self_contained_facts = await containment_checker.self_contain_facts(
+    checked_facts, 
+    response, 
+    context="Optional additional context to help with self-containment"
+)
+
+# Example: Converting "He wrote it in 1851" to "Herman Melville wrote Moby Dick in 1851"
+```
+
+### Using Context in Fact Extraction
+
+The fact extractor can now use context to improve extraction quality:
+
+```python
+extractor = FactExtractor(config=config, llm=llm)
+facts = await extractor.extract_facts(
+    response="Melville's masterpiece is considered one of the Great American Novels.",
+    context="Discussion about the novel Moby Dick by Herman Melville"
+)
+```
 
 ### Custom Retrieval System
 
@@ -163,7 +203,7 @@ config = Config(
 print(config.evaluation_categories)  # ['fully_supported', 'partially_supported', 'contradicted']
 ```
 
-See the `examples/` directory for more advanced usage patterns.
+See the `examples/` directory for more advanced usage patterns, including `self_containment_example.py` which demonstrates how to process non-self-contained facts.
 
 ## Contributing
 
